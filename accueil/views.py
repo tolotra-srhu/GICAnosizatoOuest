@@ -1,3 +1,9 @@
 from django.shortcuts import render
 
-# Create your views here.
+
+def dashboard(request):
+    context = {
+        'titre': 'Tableau de bord',
+        'commune': 'Commune d’Anosizato Ouest',
+    }
+    return render(request, 'accueil/dashboard.html', context)
