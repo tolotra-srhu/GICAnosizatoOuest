@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # GIC-Anosizato-Ouest
 
 Plateforme de gestion intégrée de la Commune d'Anosizato Ouest
@@ -148,3 +149,6 @@ python manage.py runserver
 python manage.py check
 python manage.py test
 ```
+=======
+# GIC_Anosizato_Ouest
+>>>>>>> 8dd7f724b73e2d68d21e7cd69217822d6682d5ff
