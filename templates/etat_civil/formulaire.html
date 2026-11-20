@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block titre %}{{ titre }} — GIC Anosizato Ouest{% endblock %}
+
+{% block contenu %}
+<div class="page-head">
+    <div>
+        <h1>{{ titre }}</h1>
+        <p>Renseignez les informations de l'acte d'état civil.</p>
+    </div>
+</div>
+
+<div class="card">
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-grid">
+            {% include "includes/formulaire.html" %}
+        </div>
+        <div class="actions">
+            <button class="btn" type="submit">Enregistrer</button>
+            <a class="btn secondary" href="{% url 'etat_civil:liste' %}">Annuler</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

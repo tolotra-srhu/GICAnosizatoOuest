@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block titre %}Fonds de l'association — GIC Anosizato Ouest{% endblock %}
+
+{% block contenu %}
+<div class="page-head">
+    <div>
+        <p class="eyebrow">Caisse de l'association</p>
+        <h1>Fonds de l'association</h1>
+        <p>Suivi des entrées, sorties et du solde de la caisse communale.</p>
+    </div>
+    <div class="actions">
+        <a class="btn" href="{% url 'finances:fonds_ajouter' %}">Ajouter un mouvement</a>
+        <a class="btn secondary" href="{% url 'finances:adidy_liste' %}">Paiements adidy</a>
+    </div>
+</div>
+
+<div class="grid-stats">
+    <div class="stat-card accent-green">
+        <span>Entrées</span>
+        <strong>{{ entrees|floatformat:0 }}</strong>
+        <small>Ariary</small>
+    </div>
+    <div class="stat-card accent-red">
+        <span>Sorties</span>
+        <strong>{{ sorties|floatformat:0 }}</strong>
+        <small>Ariary</small>
+    </div>
+    <div class="stat-card accent-blue">
+        <span>Solde caisse</span>
+        <strong>{{ solde|floatformat:0 }}</strong>
+        <small>Ariary</small>
+    </div>
+    <div class="stat-card accent-gold">
+        <span>Total adidy</span>
+        <strong>{{ total_adidy|floatformat:0 }}</strong>
+        <small>Ariary collectés</small>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-head">
+        <h2>Mouvements enregistrés</h2>
+        <span class="help">Réservé au trésorier et à l'administration communale</span>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Libellé</th>
+                    <th>Type</th>
+                    <th>Fokontany</th>
+                    <th>Montant</th>
+                    <th>Enregistré par</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for mouvement in mouvements %}
+                <tr>
+                    <td>{{ mouvement.date_mouvement|date:"d/m/Y" }}</td>
+                    <td>{{ mouvement.libelle }}</td>
+                    <td>
+                        <span class="badge badge-{% if mouvement.type_mouvement == 'ENTREE' %}acceptee{% else %}refusee{% endif %}">
+                            {{ mouvement.get_type_mouvement_display }}
+                        </span>
+                    </td>
+                    <td>{{ mouvement.fokontany.nom|default:"Commune" }}</td>
+                    <td>{{ mouvement.montant|floatformat:0 }} Ar</td>
+                    <td>{{ mouvement.enregistre_par.get_full_name|default:mouvement.enregistre_par.username }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="empty">Aucun mouvement enregistré.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

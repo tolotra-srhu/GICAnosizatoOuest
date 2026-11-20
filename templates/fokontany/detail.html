@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block titre %}{{ fokontany.nom }} — GIC Anosizato Ouest{% endblock %}
+
+{% block contenu %}
+<div class="page-head">
+    <div>
+        <p class="eyebrow">{{ fokontany.code }} · Fokontany</p>
+        <h1>{{ fokontany.nom }}</h1>
+        <p>{{ fokontany.adresse|default:"Commune d'Anosizato Ouest" }}</p>
+    </div>
+    <div class="actions">
+        {% if est_maire %}
+        <a class="btn" href="{% url 'fokontany:modifier' fokontany.pk %}">Modifier la fiche</a>
+        {% endif %}
+        <a class="btn secondary" href="{% url 'fokontany:liste' %}">Liste des fokontany</a>
+        <a class="btn secondary" href="{% url 'fokontany:carte' %}">Voir la carte</a>
+    </div>
+</div>
+
+<div class="grid-stats">
+    <div class="stat-card accent-green">
+        <span>Recensement</span>
+        <strong>{{ fokontany.citoyens.count }}</strong>
+        <small>citoyens</small>
+    </div>
+    <div class="stat-card accent-slate">
+        <span>Population {{ annee_population }}</span>
+        <strong>{{ population.total|default:0 }}</strong>
+        <small>{{ population.hommes|default:0 }} H / {{ population.femmes|default:0 }} F</small>
+    </div>
+    <div class="stat-card accent-pink">
+        <span>Naissances</span>
+        <strong>{{ fokontany.actes_naissance.count }}</strong>
+        <small>actes</small>
+    </div>
+    <div class="stat-card accent-purple">
+        <span>État civil</span>
+        <strong>{{ fokontany.actes_etat_civil.count }}</strong>
+        <small>actes</small>
+    </div>
+    <div class="stat-card accent-blue">
+        <span>Documents</span>
+        <strong>{{ fokontany.documents_administratifs.count }}</strong>
+        <small>délivrés</small>
+    </div>
+    <div class="stat-card accent-gold">
+        <span>Adidy</span>
+        <strong>{{ total_adidy|floatformat:0 }}</strong>
+        <small>Ariary</small>
+    </div>
+    <div class="stat-card accent-slate">
+        <span>Personnel</span>
+        <strong>{{ fokontany.agents.count }}</strong>
+        <small>agents</small>
+    </div>
+    <div class="stat-card accent-red">
+        <span>Demandes</span>
+        <strong>{{ fokontany.demandes.count }}</strong>
+        <small>{{ total_demandes_attente }} en attente</small>
+    </div>
+</div>
+
+<div class="grid-two">
+    <div class="card">
+        <h2>Informations administratives</h2>
+        <dl class="detail-list">
+            <dt>Code</dt><dd>{{ fokontany.code }}</dd>
+            <dt>Nom</dt><dd>{{ fokontany.nom }}</dd>
+            <dt>Responsable</dt><dd>{{ fokontany.responsable|default:"Non renseigné" }}</dd>
+            <dt>Adresse</dt><dd>{{ fokontany.adresse|default:"Non renseignée" }}</dd>
+            <dt>Téléphone</dt><dd>{{ fokontany.telephone|default:"Non renseigné" }}</dd>
+            <dt>Latitude / Longitude</dt>
+            <dd>{{ fokontany.latitude|default:"—" }} / {{ fokontany.longitude|default:"—" }}</dd>
+            <dt>Statut</dt>
+            <dd>
+                {% if fokontany.actif %}
+                <span class="badge badge-acceptee">Actif</span>
+                {% else %}
+                <span class="badge badge-annulee">Inactif</span>
+                {% endif %}
+            </dd>
+            <dt>Date de création</dt><dd>{{ fokontany.date_creation|date:"d/m/Y H:i" }}</dd>
+            <dt>Population {{ annee_population }}</dt>
+            <dd>{{ population.total|default:0 }} habitants ({{ population.hommes|default:0 }} H / {{ population.femmes|default:0 }} F)</dd>
+            <dt>Source population</dt><dd>{{ population.source|default:"Non renseignée" }}</dd>
+        </dl>
+    </div>
+
+    <div class="card">
+        <h2>Spécificités et responsables</h2>
+        <p>{{ fokontany.specificites|default:"Spécificités à renseigner par l'administration communale."|linebreaksbr }}</p>
+
+        <h3 class="subheading">Chef de fokontany</h3>
+        {% for chef in chefs %}
+        <p class="person-line">
+            <strong>{{ chef.utilisateur.get_full_name|default:chef.utilisateur.username }}</strong>
+            <span class="badge badge-info">{{ chef.get_role_display }}</span>
+        </p>
+        {% empty %}
+        <p class="help">Aucun compte chef affecté à ce fokontany.</p>
+        {% endfor %}
+
+        <h3 class="subheading">Personnel / responsables</h3>
+        <div class="people-grid">
+            {% for agent in personnels %}
+            <article class="person-card">
+                {% if agent.photo %}
+                <img src="{{ agent.photo.url }}" alt="{{ agent.nom }}">
+                {% else %}
+                <div class="avatar-initials">{{ agent.nom|slice:":1" }}{{ agent.prenoms|slice:":1" }}</div>
+                {% endif %}
+                <div>
+                    <strong>{{ agent.nom }} {{ agent.prenoms }}</strong>
+                    <span>{{ agent.fonction }}</span>
+                    <small>{{ agent.telephone|default:"" }}</small>
+                </div>
+            </article>
+            {% empty %}
+            <p class="empty">Aucun personnel enregistré.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="grid-two">
+    <div class="card">
+        <div class="card-head">
+            <h2>Derniers recensements</h2>
+            <a class="btn small secondary" href="{% url 'citoyens:liste' %}">Tout voir</a>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>N°</th><th>Citoyen</th><th>Sexe</th><th>Enregistré le</th></tr></thead>
+                <tbody>
+                    {% for citoyen in citoyens_recents %}
+                    <tr>
+                        <td>{{ citoyen.numero_citoyen }}</td>
+                        <td>{{ citoyen.nom }} {{ citoyen.prenoms }}</td>
+                        <td>{{ citoyen.get_sexe_display }}</td>
+                        <td>{{ citoyen.date_enregistrement|date:"d/m/Y" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="empty">Aucun citoyen recensé.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-head">
+            <h2>Dernières naissances</h2>
+            <a class="btn small secondary" href="{% url 'etat_civil:naissances_liste' %}">Tout voir</a>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>N° acte</th><th>Enfant</th><th>Sexe</th><th>Date</th></tr></thead>
+                <tbody>
+                    {% for acte in naissances_recentes %}
+                    <tr>
+                        <td>{{ acte.numero_acte }}</td>
+                        <td>{{ acte.nom_enfant }} {{ acte.prenoms_enfant }}</td>
+                        <td>{{ acte.get_sexe_display }}</td>
+                        <td>{{ acte.date_naissance|date:"d/m/Y" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="empty">Aucune naissance enregistrée.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="grid-two">
+    <div class="card">
+        <div class="card-head">
+            <h2>Documents délivrés</h2>
+            <a class="btn small secondary" href="{% url 'etat_civil:documents_liste' %}">Tout voir</a>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Numéro</th><th>Type</th><th>Bénéficiaire</th><th>Date</th></tr></thead>
+                <tbody>
+                    {% for document in documents_recents %}
+                    <tr>
+                        <td>{{ document.numero }}</td>
+                        <td>{{ document.get_type_document_display }}</td>
+                        <td>{{ document.nom_beneficiaire }}</td>
+                        <td>{{ document.date_delivrance|date:"d/m/Y" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="empty">Aucun document délivré.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-head">
+            <h2>Demandes récentes</h2>
+            <a class="btn small secondary" href="{% url 'demandes:liste' %}">Tout voir</a>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Date</th><th>Objet</th><th>Statut</th><th></th></tr></thead>
+                <tbody>
+                    {% for demande in demandes_recentes %}
+                    <tr>
+                        <td>{{ demande.date_creation|date:"d/m/Y" }}</td>
+                        <td>{{ demande.objet }}</td>
+                        <td><span class="badge badge-{{ demande.statut|lower }}">{{ demande.get_statut_display }}</span></td>
+                        <td><a class="btn small" href="{% url 'demandes:detail' demande.pk %}">Ouvrir</a></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="empty">Aucune demande.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-head">
+        <h2>Actualités de la commune</h2>
+        <span class="help">Visibles par tous les chefs fokontany</span>
+    </div>
+    <div class="news-feed">
+        {% for actualite in actualites %}
+        <article class="news-item">
+            <span class="badge badge-info">{{ actualite.get_categorie_display }}</span>
+            <h3>{{ actualite.titre }}</h3>
+            <p>{{ actualite.contenu|truncatewords:24 }}</p>
+            <small>{{ actualite.date_publication|date:"d/m/Y H:i" }}</small>
+        </article>
+        {% empty %}
+        <p class="empty">Aucune actualité publiée.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

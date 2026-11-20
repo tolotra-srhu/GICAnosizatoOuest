@@ -1,0 +1,97 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion — Plateforme de Gestion Intégrée Communale d'Anosizato Ouest</title>
+    <link rel="icon" type="image/png" href="{% static 'img/logo.png' %}">
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body class="auth-page">
+<div class="auth-shell">
+    <aside class="auth-aside">
+        <a class="auth-brand" href="{% url 'accueil:accueil' %}">
+            <img src="{% static 'img/logo.png' %}" alt="Logo Commune Anosizato Ouest">
+            <div>
+                <strong>Anosizato Ouest</strong>
+                <span>Commune Rurale</span>
+            </div>
+        </a>
+        <div class="auth-aside-content">
+            <p class="auth-kicker">Plateforme de Gestion Intégrée Communale</p>
+            <h2>Bienvenue sur votre espace de gestion.</h2>
+            <p>
+                Un accès unique pour l'Administrateur, le Maire, le Trésorier,
+                le Secrétaire et les Chefs Fokontany : recensement, état civil,
+                trésorerie, demandes et actualités.
+            </p>
+            <ul class="auth-points">
+                <li>Suivi des activités de chaque fokontany</li>
+                <li>Demandes traitées et documents PDF sécurisés</li>
+                <li>Statistiques et graphiques mensuels</li>
+            </ul>
+        </div>
+        <p class="auth-aside-footer">&copy; 2026 — Commune d'Anosizato Ouest</p>
+    </aside>
+
+    <main class="auth-main">
+        <div class="auth-card">
+            <img src="{% static 'img/logo.png' %}" alt="" class="auth-card-logo">
+            <h1>Authentification</h1>
+            <p class="subtitle">
+                Connectez-vous avec le rôle associé à votre compte.
+            </p>
+
+            {% if form.non_field_errors %}
+            <div class="message error">
+                Identifiants invalides. Vérifiez votre nom d'utilisateur et votre mot de passe.
+            </div>
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ next }}">
+
+                <div class="form-group">
+                    <label for="{{ form.role.id_for_label }}">Rôle</label>
+                    {{ form.role }}
+                    {% for erreur in form.role.errors %}
+                    <p class="error">{{ erreur }}</p>
+                    {% endfor %}
+                    <small>Choisissez le rôle correspondant à votre compte.</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.username.id_for_label }}">Nom d'utilisateur</label>
+                    {{ form.username }}
+                    {% for erreur in form.username.errors %}
+                    <p class="error">{{ erreur }}</p>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.password.id_for_label }}">Mot de passe</label>
+                    {{ form.password }}
+                    {% for erreur in form.password.errors %}
+                    <p class="error">{{ erreur }}</p>
+                    {% endfor %}
+                </div>
+
+                <button type="submit" class="btn">Se connecter</button>
+            </form>
+
+            <div class="auth-roles">
+                {% for valeur, libelle in form.fields.role.choices %}
+                <span class="role-pill">{{ libelle }}</span>
+                {% endfor %}
+            </div>
+
+            <p class="auth-back">
+                <a href="{% url 'accueil:accueil' %}">&larr; Retour à l'accueil</a>
+            </p>
+        </div>
+    </main>
+</div>
+</body>
+</html>

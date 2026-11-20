@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+
+{% block titre %}Tableau de bord — {{ fokontany.nom }}{% endblock %}
+
+{% block contenu %}
+<div class="page-head">
+    <div>
+        <p class="eyebrow">Espace Chef Fokontany</p>
+        <h1>{{ fokontany.nom }}</h1>
+        <p>Code {{ fokontany.code }} · {{ fokontany.adresse|default:"Commune d'Anosizato Ouest" }}</p>
+    </div>
+    <div class="actions">
+        <a class="btn" href="{% url 'demandes:creer' %}">Nouvelle demande</a>
+        <a class="btn secondary" href="{% url 'citoyens:ajouter' %}">Recenser un citoyen</a>
+    </div>
+</div>
+
+<div class="grid-stats">
+    <div class="stat-card accent-green">
+        <span>Recensement</span>
+        <strong>{{ total_citoyens }}</strong>
+        <small>citoyens</small>
+    </div>
+    <div class="stat-card accent-slate">
+        <span>Population {{ annee_population }}</span>
+        <strong>{{ population.total|default:0 }}</strong>
+        <small>{{ population.hommes|default:0 }} H / {{ population.femmes|default:0 }} F</small>
+    </div>
+    <div class="stat-card accent-pink">
+        <span>Naissances</span>
+        <strong>{{ total_naissances }}</strong>
+        <small>actes enregistrés</small>
+    </div>
+    <div class="stat-card accent-purple">
+        <span>État civil</span>
+        <strong>{{ total_actes }}</strong>
+        <small>actes</small>
+    </div>
+    <div class="stat-card accent-blue">
+        <span>Documents</span>
+        <strong>{{ total_documents }}</strong>
+        <small>délivrés</small>
+    </div>
+    <div class="stat-card accent-gold">
+        <span>Adidy collecté</span>
+        <strong>{{ total_adidy|floatformat:0 }}</strong>
+        <small>Ariary</small>
+    </div>
+    <div class="stat-card accent-red">
+        <span>Demandes en attente</span>
+        <strong>{{ total_demandes_attente }}</strong>
+        <small>sur {{ total_demandes }} demandes</small>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Actions rapides</h2>
+    <div class="quick-grid">
+        <a class="quick-action" href="{% url 'etat_civil:naissance_ajouter' %}">
+            <span>👶</span>
+            <strong>Acte de naissance</strong>
+            <small>Enregistrer un nouveau-né</small>
+        </a>
+        <a class="quick-action" href="{% url 'etat_civil:certificat_residence' %}">
+            <span>🏠</span>
+            <strong>Certificat de résidence</strong>
+            <small>Délivrer un certificat</small>
+        </a>
+        <a class="quick-action" href="{% url 'citoyens:ajouter' %}">
+            <span>📋</span>
+            <strong>Formulaire de recensement</strong>
+            <small>Ajouter un citoyen</small>
+        </a>
+        <a class="quick-action" href="{% url 'demandes:creer' %}">
+            <span>🛠️</span>
+            <strong>Demande d'amélioration</strong>
+            <small>Route, école, CSBII, WC, pompe…</small>
+        </a>
+        <a class="quick-action" href="{% url 'finances:adidy_ajouter' %}">
+            <span>💵</span>
+            <strong>Paiement adidy</strong>
+            <small>Enregistrer un paiement mensuel</small>
+        </a>
+        <a class="quick-action" href="{% url 'etat_civil:documents_liste' %}">
+            <span>📄</span>
+            <strong>Documents administratifs</strong>
+            <small>CIN, bulletin, attestation</small>
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-head">
+        <div>
+            <h2>Activités des 6 derniers mois</h2>
+            <p>Évolution du recensement, des naissances, demandes et adidy de votre fokontany.</p>
+        </div>
+        <div class="legend">
+            <span><i class="dot dot-green"></i>Recensement</span>
+            <span><i class="dot dot-pink"></i>Naissances</span>
+            <span><i class="dot dot-blue"></i>Demandes</span>
+            <span><i class="dot dot-gold"></i>Adidy</span>
+        </div>
+    </div>
+    <div class="chart-wrap small">
+        <canvas id="chartChef"></canvas>
+    </div>
+</div>
+
+<div class="grid-two">
+    <div class="card">
+        <div class="card-head">
+            <h2>Mes demandes récentes</h2>
+            <a class="btn small secondary" href="{% url 'demandes:liste' %}">Tout voir</a>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr><th>Date</th><th>Objet</th><th>Statut</th><th></th></tr>
+                </thead>
+                <tbody>
+                    {% for d in demandes_recentes %}
+                    <tr>
+                        <td>{{ d.date_creation|date:"d/m/Y" }}</td>
+                        <td>{{ d.objet }}</td>
+                        <td><span class="badge badge-{{ d.statut|lower }}">{{ d.get_statut_display }}</span></td>
+                        <td><a class="btn small" href="{% url 'demandes:detail' d.pk %}">Ouvrir</a></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="empty">Aucune demande envoyée.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-head">
+            <h2>Actualités de la commune</h2>
+            <span class="help">Publiées par le Maire</span>
+        </div>
+        <div class="news-feed">
+            {% for actualite in actualites %}
+            <article class="news-item">
+                <span class="badge badge-info">{{ actualite.get_categorie_display }}</span>
+                <h3>{{ actualite.titre }}</h3>
+                <p>{{ actualite.contenu|truncatewords:22 }}</p>
+                <small>{{ actualite.date_publication|date:"d/m/Y H:i" }}</small>
+            </article>
+            {% empty %}
+            <p class="empty">Aucune actualité publiée.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="grid-two">
+    <div class="card">
+        <h2>Dernières naissances</h2>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr><th>Date</th><th>Enfant</th><th>Sexe</th></tr>
+                </thead>
+                <tbody>
+                    {% for naissance in naissances_recentes %}
+                    <tr>
+                        <td>{{ naissance.date_naissance|date:"d/m/Y" }}</td>
+                        <td>{{ naissance.nom_enfant }} {{ naissance.prenoms_enfant }}</td>
+                        <td>{{ naissance.get_sexe_display }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="3" class="empty">Aucune naissance enregistrée.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Derniers paiements adidy</h2>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr><th>Date</th><th>Contribuable</th><th>Période</th><th>Montant</th></tr>
+                </thead>
+                <tbody>
+                    {% for paiement in adidy_recents %}
+                    <tr>
+                        <td>{{ paiement.date_paiement|date:"d/m/Y" }}</td>
+                        <td>{{ paiement.contribuable }}</td>
+                        <td>{{ paiement.periode }}</td>
+                        <td>{{ paiement.montant|floatformat:0 }} Ar</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="empty">Aucun paiement enregistré.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{{ graphique|json_script:"graphique-chef-data" }}
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+    const dataChef = JSON.parse(document.getElementById('graphique-chef-data').textContent);
+    const ctxChef = document.getElementById('chartChef');
+    if (ctxChef && window.Chart) {
+        new Chart(ctxChef, {
+            type: 'bar',
+            data: {
+                labels: dataChef.labels,
+                datasets: [
+                    { label: 'Recensement', data: dataChef.recensements, backgroundColor: '#176b50', borderRadius: 6 },
+                    { label: 'Naissances', data: dataChef.naissances, backgroundColor: '#db2777', borderRadius: 6 },
+                    { label: 'Demandes', data: dataChef.demandes, backgroundColor: '#2563eb', borderRadius: 6 },
+                    { label: 'Adidy', data: dataChef.adidy, backgroundColor: '#c9a227', borderRadius: 6 }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false }, tooltip: { backgroundColor: '#104b39' } },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: '#e6eeea' } }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

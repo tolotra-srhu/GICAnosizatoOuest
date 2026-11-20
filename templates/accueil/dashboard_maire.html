@@ -1,0 +1,337 @@
+{% extends "base.html" %}
+
+{% block titre %}Tableau de bord — {{ role_libelle }}{% endblock %}
+
+{% block contenu %}
+<div class="page-head">
+    <div>
+        <p class="eyebrow">Espace {{ role_libelle }}</p>
+        <h1>Tableau de bord</h1>
+        <p>Vue globale et suivi en temps réel des fokontany d'Anosizato Ouest.</p>
+    </div>
+    <div class="actions">
+        {% if peut_gerer_comptes %}
+        <a class="btn" href="{% url 'comptes:gestion_chefs' %}">Gérer les comptes</a>
+        {% endif %}
+        <a class="btn secondary" href="{% url 'demandes:liste' %}">Voir les demandes</a>
+        {% if peut_gerer_comptes %}
+        <a class="btn secondary" href="/admin/accueil/actualite/add/">Publier une actualité</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="grid-stats">
+    <div class="stat-card accent-green">
+        <span>Fokontany</span>
+        <strong>{{ total_fokontany }}</strong>
+        <small>administrés</small>
+    </div>
+    <div class="stat-card accent-slate">
+        <span>Population {{ annee_population }}</span>
+        <strong>{{ totaux_population.total }}</strong>
+        <small>habitants de référence</small>
+    </div>
+    <div class="stat-card accent-blue">
+        <span>Recensement</span>
+        <strong>{{ total_citoyens }}</strong>
+        <small>citoyens enregistrés</small>
+    </div>
+    <div class="stat-card accent-pink">
+        <span>Naissances</span>
+        <strong>{{ total_naissances }}</strong>
+        <small>actes de naissance</small>
+    </div>
+    <div class="stat-card accent-gold">
+        <span>Mariages</span>
+        <strong>{{ total_mariages }}</strong>
+        <small>actes de mariage</small>
+    </div>
+    <div class="stat-card accent-slate">
+        <span>Décès</span>
+        <strong>{{ total_deces }}</strong>
+        <small>actes enregistrés</small>
+    </div>
+    <div class="stat-card accent-purple">
+        <span>État civil</span>
+        <strong>{{ total_actes }}</strong>
+        <small>actes au total</small>
+    </div>
+    <div class="stat-card accent-green">
+        <span>Documents</span>
+        <strong>{{ total_documents }}</strong>
+        <small>délivrés</small>
+    </div>
+    <div class="stat-card accent-blue">
+        <span>CIN</span>
+        <strong>{{ total_cin }}</strong>
+        <small>cartes délivrées</small>
+    </div>
+    <div class="stat-card accent-pink">
+        <span>Bulletins</span>
+        <strong>{{ total_bulletins }}</strong>
+        <small>bulletins de naissance</small>
+    </div>
+    <div class="stat-card accent-gold">
+        <span>Demandes</span>
+        <strong>{{ total_demandes }}</strong>
+        <small>{{ total_demandes_amelioration }} améliorations</small>
+    </div>
+    <div class="stat-card accent-red">
+        <span>À traiter</span>
+        <strong>{{ total_demandes_attente }}</strong>
+        <small>demandes en attente</small>
+    </div>
+    <div class="stat-card accent-green">
+        <span>Adidy collecté</span>
+        <strong>{{ total_adidy|floatformat:0 }}</strong>
+        <small>Ariary</small>
+    </div>
+    <div class="stat-card accent-gold">
+        <span>Caisse association</span>
+        <strong>{{ solde_association|floatformat:0 }}</strong>
+        <small>Ariary disponibles</small>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-head">
+        <div>
+            <h2>Graphique des activités par mois</h2>
+            <p>Recensements, naissances, demandes et adidy sur les 12 derniers mois.</p>
+        </div>
+        <div class="legend">
+            <span><i class="dot dot-green"></i>Recensement</span>
+            <span><i class="dot dot-pink"></i>Naissances</span>
+            <span><i class="dot dot-blue"></i>Demandes</span>
+            <span><i class="dot dot-gold"></i>Adidy</span>
+        </div>
+    </div>
+    <div class="chart-wrap">
+        <canvas id="chartActivites"></canvas>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-head">
+        <h2>Activité par fokontany</h2>
+        <a class="btn small secondary" href="{% url 'fokontany:liste' %}">Tous les fokontany</a>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Fokontany</th>
+                    <th>Hommes</th>
+                    <th>Femmes</th>
+                    <th>Habitants</th>
+                    <th>Recensés</th>
+                    <th>Naissances</th>
+                    <th>Mariages</th>
+                    <th>Décès</th>
+                    <th>Documents</th>
+                    <th>Demandes</th>
+                    <th>En attente</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in fokontanys %}
+                <tr>
+                    <td><strong>{{ f.nom }}</strong><br><small>{{ f.code }}</small></td>
+                    <td>{{ f.population_hommes|default:0 }}</td>
+                    <td>{{ f.population_femmes|default:0 }}</td>
+                    <td><strong>{{ f.population_hommes|add:f.population_femmes }}</strong></td>
+                    <td>{{ f.nb_citoyens }}</td>
+                    <td>{{ f.nb_naissances }}</td>
+                    <td>{{ f.nb_mariages }}</td>
+                    <td>{{ f.nb_deces }}</td>
+                    <td>{{ f.nb_documents }}</td>
+                    <td>{{ f.nb_demandes }}</td>
+                    <td>
+                        {% if f.nb_demandes_attente %}
+                        <span class="badge badge-en_attente">{{ f.nb_demandes_attente }}</span>
+                        {% else %}0{% endif %}
+                    </td>
+                    <td><a class="btn small" href="{% url 'fokontany:detail' f.pk %}">Fiche</a></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="12" class="empty">Aucun fokontany enregistré.</td></tr>
+                {% endfor %}
+                <tr>
+                    <td><strong>Total commune</strong></td>
+                    <td><strong>{{ totaux_population.hommes }}</strong></td>
+                    <td><strong>{{ totaux_population.femmes }}</strong></td>
+                    <td><strong>{{ totaux_population.total }}</strong></td>
+                    <td colspan="8"></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="grid-two">
+    <div class="card">
+        <div class="card-head">
+            <h2>Demandes récentes</h2>
+            <a class="btn small secondary" href="{% url 'demandes:liste' %}">Tout voir</a>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Fokontany</th>
+                        <th>Objet</th>
+                        <th>Statut</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in demandes_recentes %}
+                    <tr>
+                        <td>{{ d.date_creation|date:"d/m/Y" }}</td>
+                        <td>{{ d.fokontany.nom }}</td>
+                        <td>{{ d.objet }}</td>
+                        <td><span class="badge badge-{{ d.statut|lower }}">{{ d.get_statut_display }}</span></td>
+                        <td><a class="btn small" href="{% url 'demandes:detail' d.pk %}">Ouvrir</a></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="empty">Aucune demande pour le moment.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-head">
+            <h2>Actualités publiées</h2>
+            {% if peut_gerer_comptes %}
+            <a class="btn small secondary" href="/admin/accueil/actualite/">Gérer</a>
+            {% endif %}
+        </div>
+        <div class="news-feed">
+            {% for actualite in actualites %}
+            <article class="news-item">
+                <span class="badge badge-info">{{ actualite.get_categorie_display }}</span>
+                <h3>{{ actualite.titre }}</h3>
+                <p>{{ actualite.contenu|truncatewords:20 }}</p>
+                <small>{{ actualite.date_publication|date:"d/m/Y H:i" }}</small>
+            </article>
+            {% empty %}
+            <p class="empty">Aucune actualité publiée.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="grid-two">
+    <div class="card">
+        <h2>Mariages récents</h2>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr><th>Date</th><th>Fokontany</th><th>N° acte</th><th>Lieu</th></tr>
+                </thead>
+                <tbody>
+                    {% for mariage in mariages_recents %}
+                    <tr>
+                        <td>{{ mariage.date_acte|date:"d/m/Y" }}</td>
+                        <td>{{ mariage.fokontany.nom|default:"—" }}</td>
+                        <td>{{ mariage.numero_acte }}</td>
+                        <td>{{ mariage.lieu_acte }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="empty">Aucun mariage enregistré.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Naissances récentes</h2>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr><th>Date</th><th>Enfant</th><th>Sexe</th><th>Fokontany</th></tr>
+                </thead>
+                <tbody>
+                    {% for naissance in naissances_recentes %}
+                    <tr>
+                        <td>{{ naissance.date_naissance|date:"d/m/Y" }}</td>
+                        <td>{{ naissance.nom_enfant }} {{ naissance.prenoms_enfant }}</td>
+                        <td>{{ naissance.get_sexe_display }}</td>
+                        <td>{{ naissance.fokontany.nom }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="empty">Aucune naissance enregistrée.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-head">
+        <h2>Responsables de la commune</h2>
+        <a class="btn small secondary" href="{% url 'personnel:liste' %}">Tout le personnel</a>
+    </div>
+    <div class="people-grid">
+        {% for agent in responsables %}
+        <article class="person-card">
+            {% if agent.photo %}
+            <img src="{{ agent.photo.url }}" alt="{{ agent.nom }} {{ agent.prenoms }}">
+            {% else %}
+            <div class="avatar-initials">{{ agent.nom|slice:":1" }}{{ agent.prenoms|slice:":1" }}</div>
+            {% endif %}
+            <div>
+                <strong>{{ agent.nom }} {{ agent.prenoms }}</strong>
+                <span>{{ agent.fonction }}</span>
+                <small>{{ agent.fokontany.nom|default:"Commune" }}</small>
+            </div>
+        </article>
+        {% empty %}
+        <p class="empty">Aucun responsable enregistré.</p>
+        {% endfor %}
+    </div>
+</div>
+
+{{ graphique|json_script:"graphique-data" }}
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+    const dataGraphique = JSON.parse(document.getElementById('graphique-data').textContent);
+    const ctx = document.getElementById('chartActivites');
+    if (ctx && window.Chart) {
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dataGraphique.labels,
+                datasets: [
+                    { label: 'Recensement', data: dataGraphique.recensements, borderColor: '#176b50', backgroundColor: 'rgba(23,107,80,.12)', tension: .35, fill: true },
+                    { label: 'Naissances', data: dataGraphique.naissances, borderColor: '#db2777', backgroundColor: 'rgba(219,39,119,.10)', tension: .35, fill: true },
+                    { label: 'Demandes', data: dataGraphique.demandes, borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,.10)', tension: .35, fill: true },
+                    { label: 'Adidy', data: dataGraphique.adidy, borderColor: '#c9a227', backgroundColor: 'rgba(201,162,39,.10)', tension: .35, fill: true }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { backgroundColor: '#104b39' }
+                },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: '#e6eeea' } }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

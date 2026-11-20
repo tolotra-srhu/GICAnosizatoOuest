@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block titre %}{{ demande.objet }} — Demande{% endblock %}
+
+{% block contenu %}
+<div class="page-head">
+    <div>
+        <h1>{{ demande.objet }}</h1>
+        <p>
+            Demande {{ demande.get_type_demande_display|lower }} ·
+            {{ demande.fokontany.nom }} ·
+            {{ demande.date_creation|date:"d/m/Y H:i" }}
+        </p>
+    </div>
+    <div class="actions">
+        <span class="badge badge-{{ demande.statut|lower }}">{{ demande.get_statut_display }}</span>
+        <span class="badge badge-{{ demande.priorite|lower }}">{{ demande.get_priorite_display }}</span>
+        {% if demande.est_finie %}
+        <a class="btn" href="{% url 'demandes:pdf' demande.pk %}">Télécharger le PDF</a>
+        {% endif %}
+        <a class="btn secondary" href="{% url 'demandes:liste' %}">Retour</a>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Détail de la demande</h2>
+    <dl class="detail-list">
+        <dt>Référence</dt>
+        <dd><strong>{{ demande.reference }}</strong></dd>
+
+        <dt>Fokontany</dt>
+        <dd>{{ demande.fokontany.nom }} ({{ demande.fokontany.code }})</dd>
+
+        <dt>Demandeur</dt>
+        <dd>{{ demande.demandeur.username }}</dd>
+
+        <dt>Type</dt>
+        <dd>{{ demande.get_type_demande_display }}</dd>
+
+        <dt>Priorité</dt>
+        <dd>{{ demande.get_priorite_display }}</dd>
+
+        {% if demande.citoyen %}
+        <dt>Citoyen concerné</dt>
+        <dd>
+            {{ demande.citoyen.nom }} {{ demande.citoyen.prenoms }}
+            ({{ demande.citoyen.numero_citoyen }})
+        </dd>
+        {% endif %}
+
+        {% if demande.document_souhaite %}
+        <dt>Document souhaité</dt>
+        <dd>{{ demande.document_souhaite }}</dd>
+        {% endif %}
+
+        <dt>Description</dt>
+        <dd>{{ demande.description|linebreaksbr }}</dd>
+
+        <dt>Statut</dt>
+        <dd>{{ demande.get_statut_display }}</dd>
+
+        {% if demande.date_traitement %}
+        <dt>Date de traitement</dt>
+        <dd>{{ demande.date_traitement|date:"d/m/Y H:i" }}</dd>
+        {% endif %}
+
+        {% if demande.traite_par %}
+        <dt>Traitée par</dt>
+        <dd>{{ demande.traite_par.username }}</dd>
+        {% endif %}
+
+        {% if demande.reponse %}
+        <dt>Réponse de l'administration</dt>
+        <dd>{{ demande.reponse|linebreaksbr }}</dd>
+        {% endif %}
+
+        <dt>Cachet officiel</dt>
+        <dd>
+            {% if demande.cachet_applique %}
+            <span class="badge badge-acceptee">Appliqué</span>
+            {% if demande.date_cachet %}
+            <small>le {{ demande.date_cachet|date:"d/m/Y H:i" }}</small>
+            {% endif %}
+            {% elif demande.est_finie %}
+            <span class="cachet-cache">CACHET MASQUÉ</span>
+            {% else %}
+            <span class="help">Disponible après traitement de la demande.</span>
+            {% endif %}
+        </dd>
+    </dl>
+
+    {% if est_maire and demande.est_finie and not demande.cachet_applique %}
+    <form method="post" action="{% url 'demandes:appliquer_cachet' demande.pk %}" class="actions">
+        {% csrf_token %}
+        <button class="btn danger" type="submit">Appliquer le cachet officiel</button>
+    </form>
+    {% endif %}
+
+    {% if est_chef and demande.en_attente %}
+    <form method="post" action="{% url 'demandes:annuler' demande.pk %}" class="actions">
+        {% csrf_token %}
+        <button class="btn danger" type="submit">Annuler ma demande</button>
+    </form>
+    {% endif %}
+</div>
+
+{% if formulaire_traitement %}
+<div class="card">
+    <h2>Traitement de la demande</h2>
+    <form method="post" action="{% url 'demandes:traiter' demande.pk %}">
+        {% csrf_token %}
+        {% include "includes/formulaire.html" with formulaire=formulaire_traitement %}
+        <div class="actions">
+            <button class="btn" type="submit">Enregistrer la décision</button>
+        </div>
+    </form>
+</div>
+{% endif %}
+{% endblock %}

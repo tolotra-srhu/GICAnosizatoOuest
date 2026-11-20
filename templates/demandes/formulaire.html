@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block titre %}Nouvelle demande — GIC Anosizato Ouest{% endblock %}
+
+{% block contenu %}
+<div class="page-head">
+    <div>
+        <h1>Nouvelle demande au maire</h1>
+        <p>
+            Fokontany : <strong>{{ fokontany.nom }}</strong>. La demande sera
+            examinée par le maire de la commune.
+        </p>
+    </div>
+</div>
+
+<div class="card">
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-grid">
+            {% include "includes/formulaire.html" %}
+        </div>
+        <div class="actions">
+            <button class="btn" type="submit">Envoyer la demande</button>
+            <a class="btn secondary" href="{% url 'demandes:liste' %}">Annuler</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    const type = document.getElementById("id_type_demande");
+    const documentField = document.getElementById("id_document_souhaite");
+
+    if (!type || !documentField) {
+        return;
+    }
+
+    const groupe = documentField.closest(".form-group");
+
+    function actualiser() {
+        groupe.style.display = type.value === "DOCUMENT" ? "" : "none";
+    }
+
+    type.addEventListener("change", actualiser);
+    actualiser();
+})();
+</script>
+{% endblock %}

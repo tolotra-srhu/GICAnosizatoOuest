@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block titre %}Paramètres — GIC Anosizato Ouest{% endblock %}
+
+{% block contenu %}
+<div class="page-head">
+    <div>
+        <p class="eyebrow">Administration de la plateforme</p>
+        <h1>Paramètres de la plateforme</h1>
+        <p>Informations générales utilisées par la commune et les documents générés.</p>
+    </div>
+    <div class="actions">
+        <a class="btn secondary" href="{% url 'comptes:gestion_chefs' %}">Comptes et rôles</a>
+    </div>
+</div>
+
+<div class="card">
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-grid">
+            {% for parametre in parametres %}
+            <div class="form-group">
+                <label for="parametre-{{ parametre.pk }}">{{ parametre.libelle }}</label>
+                <input id="parametre-{{ parametre.pk }}" type="text" name="{{ parametre.cle }}" value="{{ parametre.valeur }}">
+            </div>
+            {% empty %}
+            <p class="empty">Aucun paramètre disponible.</p>
+            {% endfor %}
+        </div>
+        <div class="actions">
+            <button class="btn" type="submit">Enregistrer les paramètres</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

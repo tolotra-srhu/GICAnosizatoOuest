@@ -1,0 +1,24 @@
+{% if formulaire.non_field_errors %}
+<div class="message error">
+    {% for erreur in formulaire.non_field_errors %}
+    <p>{{ erreur }}</p>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% for champ in formulaire %}
+<div class="form-group {% if champ.field.widget.input_type == 'textarea' %}full{% endif %}">
+    <label for="{{ champ.id_for_label }}">
+        {{ champ.label }}{% if champ.field.required %} *{% endif %}
+    </label>
+    {{ champ }}
+
+    {% if champ.help_text %}
+    <small>{{ champ.help_text }}</small>
+    {% endif %}
+
+    {% for erreur in champ.errors %}
+    <p class="error">{{ erreur }}</p>
+    {% endfor %}
+</div>
+{% endfor %}

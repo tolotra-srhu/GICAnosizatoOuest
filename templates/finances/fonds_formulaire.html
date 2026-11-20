@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block titre %}{{ titre }} — GIC Anosizato Ouest{% endblock %}
+
+{% block contenu %}
+<div class="page-head">
+    <div>
+        <p class="eyebrow">Caisse de l'association</p>
+        <h1>{{ titre }}</h1>
+        <p>Enregistrez une entrée ou une sortie de la caisse communale.</p>
+    </div>
+    <div class="actions">
+        <a class="btn secondary" href="{% url 'finances:fonds_liste' %}">Retour aux fonds</a>
+    </div>
+</div>
+
+<div class="card">
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-grid">
+            {% include "includes/formulaire.html" %}
+        </div>
+        <div class="actions">
+            <button class="btn" type="submit">Enregistrer le mouvement</button>
+            <a class="btn secondary" href="{% url 'finances:fonds_liste' %}">Annuler</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

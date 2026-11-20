@@ -1,0 +1,980 @@
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Carte GPS des fokontany | GIC Anosizato Ouest</title>
+
+    <link rel="stylesheet"
+          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+    <style>
+        :root {
+            --primary: #176b50;
+            --primary-dark: #104b39;
+            --background: #f3f6f5;
+            --text: #20332c;
+            --border: #e0e8e4;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: var(--background);
+            color: var(--text);
+        }
+
+        .header {
+            padding: 20px 24px;
+            color: white;
+            background: linear-gradient(120deg, var(--primary-dark), #23845f);
+            box-shadow: 0 3px 12px #00000018;
+        }
+
+        .header h1 {
+            margin: 0 0 7px;
+            font-size: 24px;
+        }
+
+        .header p {
+            margin: 0;
+            opacity: .9;
+            font-size: 14px;
+        }
+
+        .header-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin-top: 14px;
+        }
+
+        .header-links a,
+        .header-links button {
+            color: white;
+            font-size: 13px;
+            text-decoration: none;
+            padding: 7px 11px;
+            border: 1px solid #ffffff66;
+            border-radius: 6px;
+            background: #ffffff14;
+            cursor: pointer;
+        }
+
+        .header-links a:hover,
+        .header-links button:hover {
+            background: #ffffff2e;
+        }
+
+        .container {
+            max-width: 1500px;
+            margin: auto;
+            padding: 20px;
+        }
+
+        .statistics {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 18px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: 0 3px 10px #00000006;
+        }
+
+        .stat-card span {
+            display: block;
+            color: #66766f;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .stat-card strong {
+            font-size: 26px;
+            color: var(--primary);
+        }
+
+        .workspace {
+            display: grid;
+            grid-template-columns: 310px minmax(0, 1fr);
+            gap: 18px;
+            align-items: start;
+        }
+
+        .panel, .map-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 3px 12px #00000007;
+        }
+
+        .panel-header {
+            padding: 18px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .panel-header h2, .map-heading h2 {
+            margin: 0 0 7px;
+            font-size: 17px;
+        }
+
+        .panel-header p, .map-heading p {
+            margin: 0;
+            color: #728078;
+            font-size: 13px;
+        }
+
+        .search-area {
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .search-area input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d4ded8;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .search-area input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px #176b5015;
+        }
+
+        .button {
+            border: none;
+            border-radius: 8px;
+            padding: 11px 13px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: .2s;
+        }
+
+        .button:hover {
+            filter: brightness(.94);
+        }
+
+        .button-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .button-secondary {
+            background: #edf4f0;
+            color: var(--primary-dark);
+        }
+
+        .button-location {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .fokontany-list {
+            max-height: 490px;
+            overflow-y: auto;
+        }
+
+        .fokontany-item {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 14px 16px;
+            border: none;
+            border-bottom: 1px solid #edf1ee;
+            background: white;
+            cursor: pointer;
+        }
+
+        .fokontany-item:hover, .fokontany-item.active {
+            background: #edf7f1;
+        }
+
+        .fokontany-item strong {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .fokontany-item small {
+            color: #77847d;
+            font-size: 12px;
+        }
+
+        .empty-message {
+            padding: 20px;
+            color: #78847e;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        .map-heading {
+            padding: 17px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .map-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        #map {
+            width: 100%;
+            height: 650px;
+            min-height: 400px;
+            background: #e8ece9;
+        }
+
+        .map-footer {
+            padding: 12px 18px;
+            font-size: 12px;
+            color: #6b7972;
+            border-top: 1px solid var(--border);
+        }
+
+        .map-label {
+            background: white;
+            border: 1px solid #c9d8cf;
+            border-radius: 5px;
+            color: #173d2c;
+            padding: 4px 7px;
+            font-size: 12px;
+            font-weight: bold;
+            box-shadow: 0 2px 5px #00000020;
+            white-space: nowrap;
+        }
+
+        .leaflet-tooltip.map-label::before {
+            display: none;
+        }
+
+        .leaflet-tooltip.map-label {
+            white-space: normal;
+            text-align: center;
+            max-width: 160px;
+            z-index: 500;
+        }
+
+        .popup h3 {
+            color: var(--primary);
+            margin: 0 0 12px;
+        }
+
+        .popup p {
+            margin: 7px 0;
+            font-size: 13px;
+        }
+
+        .popup strong {
+            color: #34483e;
+        }
+
+        .popup-link {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            color: white;
+            background: var(--primary);
+            text-decoration: none;
+        }
+
+        .status-message {
+            margin-top: 12px;
+            font-size: 12px;
+            color: #64746b;
+            line-height: 1.5;
+        }
+
+        .legende-fokontany {
+            background: white;
+            padding: 12px 14px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px #00000025;
+            line-height: 1.8;
+            color: #20332c;
+            font-size: 12px;
+        }
+
+        .legende-fokontany h4 {
+            margin: 0 0 6px;
+            font-size: 13px;
+        }
+
+        .legende-fokontany .couleur {
+            display: inline-block;
+            width: 13px;
+            height: 13px;
+            margin-right: 7px;
+            vertical-align: middle;
+            border: 1px solid #555;
+            border-radius: 3px;
+        }
+
+        @media (max-width: 850px) {
+            .workspace {
+                grid-template-columns: 1fr;
+            }
+
+            .fokontany-list {
+                max-height: 260px;
+            }
+
+            #map {
+                height: 500px;
+            }
+        }
+
+        @media (max-width: 520px) {
+            .container {
+                padding: 10px;
+            }
+
+            .header {
+                padding: 18px 15px;
+            }
+
+            .header h1 {
+                font-size: 20px;
+            }
+
+            .statistics {
+                gap: 8px;
+            }
+
+            .stat-card {
+                padding: 12px 9px;
+            }
+
+            .stat-card span {
+                font-size: 11px;
+            }
+
+            .stat-card strong {
+                font-size: 21px;
+            }
+
+            .map-heading {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            #map {
+                height: 430px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<header class="header">
+    <h1>📍 Carte GPS des fokontany</h1>
+    <p>Gestion des fokontany — Anosizato Ouest</p>
+    <div class="header-links">
+        <a href="{% url 'accueil:dashboard' %}">Tableau de bord</a>
+        <a href="{% url 'fokontany:liste' %}">Liste des fokontany</a>
+        <form method="post" action="{% url 'logout' %}">
+            {% csrf_token %}
+            <button type="submit">Déconnexion</button>
+        </form>
+    </div>
+</header>
+
+<main class="container">
+    <section class="statistics">
+        <div class="stat-card">
+            <span>Fokontany enregistrés</span>
+            <strong id="total-fokontany">0</strong>
+        </div>
+
+        <div class="stat-card">
+            <span>Fokontany géolocalisés</span>
+            <strong id="total-localises">0</strong>
+        </div>
+
+        <div class="stat-card">
+            <span>Résultats de recherche</span>
+            <strong id="total-resultats">0</strong>
+        </div>
+
+        <div class="stat-card">
+            <span>Habitants ({{ annee_population }})</span>
+            <strong id="total-population">0</strong>
+        </div>
+    </section>
+
+    <section class="workspace">
+        <aside class="panel">
+            <div class="panel-header">
+                <h2>Liste des fokontany</h2>
+                <p>Rechercher et sélectionner un fokontany.</p>
+            </div>
+
+            <div class="search-area">
+                <input type="search"
+                       id="recherche"
+                       placeholder="🔎 Nom ou code..."
+                       autocomplete="off"
+                       aria-label="Rechercher un fokontany">
+
+                <button type="button"
+                        class="button button-secondary button-location"
+                        id="btn-position">
+                    🧭 Ma position
+                </button>
+
+                <div class="status-message"
+                     id="status-message"
+                     role="status"
+                     aria-live="polite">
+                    Prêt à afficher la carte.
+                </div>
+            </div>
+
+            <div class="fokontany-list" id="liste-fokontany">
+                <div class="empty-message">
+                    Chargement des fokontany...
+                </div>
+            </div>
+        </aside>
+
+        <section class="map-card">
+            <div class="map-heading">
+                <div>
+                    <h2>Carte interactive</h2>
+                    <p>Cliquez sur un marqueur ou une limite pour consulter les informations.</p>
+                </div>
+
+                <div class="map-actions">
+                    <button type="button"
+                            class="button button-primary"
+                            id="btn-tout-voir">
+                        Voir tous
+                    </button>
+
+                    <button type="button"
+                            class="button button-secondary"
+                            id="btn-limites">
+                        Afficher les limites
+                    </button>
+                </div>
+            </div>
+
+            <div id="map" aria-label="Carte interactive des fokontany"></div>
+
+            <div class="map-footer">
+                Les marqueurs indiquent des positions GPS. Les polygones
+                représentent les limites présentes dans le fichier GeoJSON.
+            </div>
+        </section>
+    </section>
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+{{ fokontany|json_script:"fokontany-data" }}
+
+<script>
+(function () {
+    "use strict";
+
+    const donnees = JSON.parse(
+        document.getElementById("fokontany-data").textContent
+    );
+    const anneePopulation = {{ annee_population }};
+
+    const fokontany = donnees.map(function (f) {
+        return {
+            id: f.id,
+            nom: f.nom || "",
+            code: f.code || "",
+            responsable: f.responsable || "",
+            adresse: f.adresse || "",
+            telephone: f.telephone || "",
+            latitude: f.latitude,
+            longitude: f.longitude,
+            hommes: Number(f.population_hommes || 0),
+            femmes: Number(f.population_femmes || 0)
+        };
+    });
+
+    const carte = L.map("map").setView([-18.941, 47.495], 14);
+
+    L.tileLayer(
+        "https://basemap.queeniemella.cc/tiles/countries/{z}/{x}/{y}.png",
+        {
+            maxZoom: 19,
+            attribution: "&copy; OpenStreetMap contributors"
+        }
+    ).addTo(carte);
+
+    const groupeMarqueurs = L.featureGroup().addTo(carte);
+    const marqueurs = [];
+    const liste = document.getElementById("liste-fokontany");
+    const recherche = document.getElementById("recherche");
+    const status = document.getElementById("status-message");
+
+    let limitesGeoJSON = null;
+    let limitesVisibles = false;
+    let controleLegende = null;
+
+    const couleursFokontany = {
+        "MG11117012001": "#e74c3c",
+        "MG11117012002": "#3498db",
+        "MG11117012003": "#2ecc71",
+        "MG11117012004": "#9b59b6",
+        "MG11117012005": "#f39c12",
+        "MG11117012006": "#1abc9c",
+        "MG11117012007": "#e84393"
+    };
+
+    const nomsFokontanyGeoJSON = {
+        "MG11117012001": "Antandrokomby",
+        "MG11117012002": "Ampefiloha",
+        "MG11117012003": "Antokontanitsara",
+        "MG11117012004": "Antananambony",
+        "MG11117012005": "Ambanimaso",
+        "MG11117012006": "Ambodivona",
+        "MG11117012007": "Ankazotoho"
+    };
+
+    function afficherStatut(message) {
+        status.textContent = message;
+    }
+
+    function coordonneesValides(f) {
+        if (
+            f.latitude === null ||
+            f.latitude === undefined ||
+            f.longitude === null ||
+            f.longitude === undefined ||
+            String(f.latitude).trim() === "" ||
+            String(f.longitude).trim() === ""
+        ) {
+            return false;
+        }
+
+        const lat = Number(f.latitude);
+        const lng = Number(f.longitude);
+
+        return Number.isFinite(lat) &&
+            Number.isFinite(lng) &&
+            Math.abs(lat) <= 90 &&
+            Math.abs(lng) <= 180;
+    }
+
+    function echapperHTML(valeur) {
+        return String(valeur ?? "").replace(/[&<>"']/g, function (c) {
+            return {
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;"
+            }[c];
+        });
+    }
+
+    function fenetreInformation(f) {
+        let html =
+            '<div class="popup">' +
+            '<h3>' + echapperHTML(f.nom) + '</h3>' +
+            '<p><strong>Code :</strong> ' +
+            echapperHTML(f.code || "Non renseigné") + '</p>' +
+            '<p><strong>Responsable :</strong> ' +
+            echapperHTML(f.responsable || "Non renseigné") + '</p>' +
+            '<p><strong>Adresse :</strong> ' +
+            echapperHTML(f.adresse || "Non renseignée") + '</p>' +
+            '<p><strong>Téléphone :</strong> ' +
+            echapperHTML(f.telephone || "Non renseigné") + '</p>' +
+            '<p><strong>Population ' + anneePopulation + ' :</strong> ' +
+            (f.hommes + f.femmes) + ' habitants (' + f.hommes + ' H / ' +
+            f.femmes + ' F)</p>';
+
+        if (coordonneesValides(f)) {
+            html +=
+                '<p><strong>Latitude :</strong> ' +
+                Number(f.latitude).toFixed(6) + '</p>' +
+                '<p><strong>Longitude :</strong> ' +
+                Number(f.longitude).toFixed(6) + '</p>';
+        }
+
+        if (f.id !== null && f.id !== undefined) {
+            html +=
+                '<a class="popup-link" href="/fokontany/' +
+                encodeURIComponent(f.id) +
+                '/">Voir la fiche administrative</a>';
+        }
+
+        return html + '</div>';
+    }
+
+    fokontany.forEach(function (f) {
+        if (!coordonneesValides(f)) {
+            return;
+        }
+
+        const marqueur = L.marker([
+            Number(f.latitude),
+            Number(f.longitude)
+        ]);
+
+        marqueur.bindPopup(fenetreInformation(f));
+
+        marqueur.bindTooltip(echapperHTML(f.nom), {
+            permanent: true,
+            direction: "right",
+            offset: [10, 0],
+            className: "map-label"
+        });
+
+        marqueur.addTo(groupeMarqueurs);
+
+        marqueurs.push({
+            donnees: f,
+            marqueur: marqueur
+        });
+    });
+
+    document.getElementById("total-fokontany").textContent =
+        fokontany.length;
+
+    document.getElementById("total-localises").textContent =
+        marqueurs.length;
+
+    document.getElementById("total-population").textContent =
+        fokontany.reduce(function (total, f) {
+            return total + f.hommes + f.femmes;
+        }, 0);
+
+    function afficherListe(terme) {
+        const texte = terme.trim().toLocaleLowerCase();
+
+        const resultats = fokontany.filter(function (f) {
+            return f.nom.toLocaleLowerCase().includes(texte) ||
+                f.code.toLocaleLowerCase().includes(texte);
+        });
+
+        liste.replaceChildren();
+
+        document.getElementById("total-resultats").textContent =
+            resultats.length;
+
+        if (resultats.length === 0) {
+            const message = document.createElement("div");
+            message.className = "empty-message";
+            message.textContent = "Aucun fokontany trouvé.";
+            liste.appendChild(message);
+            return;
+        }
+
+        resultats.forEach(function (f) {
+            const bouton = document.createElement("button");
+            bouton.type = "button";
+            bouton.className = "fokontany-item";
+
+            const nom = document.createElement("strong");
+            nom.textContent = f.nom;
+
+            const code = document.createElement("small");
+            code.textContent = "Code : " + (f.code || "Non renseigné");
+
+            bouton.append(nom, code);
+
+            const elementMarqueur = marqueurs.find(function (m) {
+                return String(m.donnees.id) === String(f.id);
+            });
+
+            if (!elementMarqueur) {
+                bouton.title = "Aucune coordonnée GPS valide";
+                code.textContent += " — GPS indisponible";
+            }
+
+            bouton.addEventListener("click", function () {
+                document.querySelectorAll(".fokontany-item").forEach(
+                    function (element) {
+                        element.classList.remove("active");
+                    }
+                );
+
+                bouton.classList.add("active");
+
+                if (elementMarqueur) {
+                    carte.flyTo(elementMarqueur.marqueur.getLatLng(), 17, {
+                        duration: 0.8
+                    });
+
+                    elementMarqueur.marqueur.openPopup();
+                    afficherStatut("Fokontany sélectionné : " + f.nom);
+                } else {
+                    afficherStatut(
+                        "Aucune coordonnée GPS valide pour " + f.nom + "."
+                    );
+                }
+            });
+
+            liste.appendChild(bouton);
+        });
+    }
+
+    recherche.addEventListener("input", function () {
+        afficherListe(recherche.value);
+    });
+
+    document.getElementById("btn-tout-voir").addEventListener(
+        "click",
+        function () {
+            if (groupeMarqueurs.getLayers().length > 0) {
+                carte.fitBounds(groupeMarqueurs.getBounds(), {
+                    padding: [35, 35],
+                    maxZoom: 16
+                });
+
+                afficherStatut(
+                    "Tous les fokontany géolocalisés sont affichés."
+                );
+            } else if (limitesGeoJSON && limitesGeoJSON.getBounds().isValid()) {
+                carte.fitBounds(limitesGeoJSON.getBounds(), {
+                    padding: [35, 35]
+                });
+            } else {
+                afficherStatut(
+                    "Aucun fokontany géolocalisé n'est disponible."
+                );
+            }
+        }
+    );
+
+    document.getElementById("btn-position").addEventListener(
+        "click",
+        function () {
+            if (!navigator.geolocation) {
+                afficherStatut(
+                    "La géolocalisation n'est pas prise en charge par ce navigateur."
+                );
+                return;
+            }
+
+            afficherStatut("Recherche de votre position...");
+
+            navigator.geolocation.getCurrentPosition(
+                function (position) {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+
+                    carte.flyTo([lat, lng], 16);
+
+                    L.circleMarker([lat, lng], {
+                        radius: 9,
+                        color: "#ffffff",
+                        weight: 3,
+                        fillColor: "#2878d0",
+                        fillOpacity: 1
+                    })
+                    .addTo(carte)
+                    .bindPopup("Votre position actuelle")
+                    .openPopup();
+
+                    afficherStatut("Votre position a été trouvée.");
+                },
+                function (erreur) {
+                    const messages = {
+                        1: "Autorisation refusée. Autorisez la géolocalisation dans le navigateur.",
+                        2: "Votre position est indisponible.",
+                        3: "La recherche de position a expiré."
+                    };
+
+                    afficherStatut(
+                        messages[erreur.code] ||
+                        "Impossible de récupérer votre position."
+                    );
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 15000,
+                    maximumAge: 60000
+                }
+            );
+        }
+    );
+
+    function creerLegende() {
+        if (controleLegende) {
+            return;
+        }
+
+        controleLegende = L.control({ position: "bottomright" });
+
+        controleLegende.onAdd = function () {
+            const div = L.DomUtil.create(
+                "div",
+                "legende-fokontany"
+            );
+
+            let contenu = "<h4>Limites des Fokontany</h4>";
+
+            Object.keys(nomsFokontanyGeoJSON).forEach(function (code) {
+                contenu +=
+                    '<div><span class="couleur" style="background:' +
+                    couleursFokontany[code] +
+                    '"></span>' +
+                    echapperHTML(nomsFokontanyGeoJSON[code]) +
+                    "</div>";
+            });
+
+            div.innerHTML = contenu;
+
+            L.DomEvent.disableClickPropagation(div);
+            L.DomEvent.disableScrollPropagation(div);
+
+            return div;
+        };
+
+        controleLegende.addTo(carte);
+    }
+
+    document.getElementById("btn-limites").addEventListener(
+        "click",
+        async function () {
+            const bouton = this;
+
+            if (limitesGeoJSON) {
+                limitesVisibles = !limitesVisibles;
+
+                if (limitesVisibles) {
+                    limitesGeoJSON.addTo(carte);
+                    creerLegende();
+
+                    bouton.textContent = "Masquer les limites";
+                    afficherStatut("Les limites des Fokontany sont affichées.");
+                } else {
+                    carte.removeLayer(limitesGeoJSON);
+
+                    if (controleLegende) {
+                        carte.removeControl(controleLegende);
+                        controleLegende = null;
+                    }
+
+                    bouton.textContent = "Afficher les limites";
+                    afficherStatut("Les limites géographiques sont masquées.");
+                }
+
+                return;
+            }
+
+            afficherStatut("Chargement des limites géographiques...");
+
+            try {
+                const reponse = await fetch(
+                    "{% static 'fokontany/limites.geojson' %}"
+                );
+
+                if (!reponse.ok) {
+                    throw new Error("Impossible de charger le fichier GeoJSON.");
+                }
+
+                const geojson = await reponse.json();
+
+                limitesGeoJSON = L.geoJSON(geojson, {
+                    style: function (feature) {
+                        const code = feature.properties?.ADM4_PCODE;
+                        const couleur =
+                            couleursFokontany[code] || "#7f8c8d";
+
+                        return {
+                            color: couleur,
+                            weight: 3,
+                            opacity: 1,
+                            fillColor: couleur,
+                            fillOpacity: 0.30
+                        };
+                    },
+
+                    onEachFeature: function (feature, layer) {
+                        const code = feature.properties?.ADM4_PCODE || "";
+
+                        const nom =
+                            nomsFokontanyGeoJSON[code] ||
+                            feature.properties?.ADM4_EN ||
+                            feature.properties?.nom ||
+                            feature.properties?.name ||
+                            "Limite géographique";
+
+                        layer.bindTooltip(echapperHTML(nom), {
+                            permanent: true,
+                            direction: "center",
+                            className: "map-label"
+                        });
+
+                        layer.bindPopup(
+                            '<div class="popup">' +
+                            '<h3>' + echapperHTML(nom) + '</h3>' +
+                            '<p><strong>Code géographique :</strong> ' +
+                            echapperHTML(code || "Non renseigné") +
+                            '</p></div>'
+                        );
+                    }
+                });
+
+                limitesGeoJSON.addTo(carte);
+                limitesVisibles = true;
+                creerLegende();
+
+                bouton.textContent = "Masquer les limites";
+
+                if (limitesGeoJSON.getBounds().isValid()) {
+                    carte.fitBounds(limitesGeoJSON.getBounds(), {
+                        padding: [30, 30]
+                    });
+                }
+
+                afficherStatut(
+                    "Les limites colorées des Fokontany ont été chargées."
+                );
+            } catch (erreur) {
+                console.error(erreur);
+
+                afficherStatut(
+                    "Limites indisponibles : fichier GeoJSON introuvable. Les marqueurs restent affichés."
+                );
+            }
+        }
+    );
+
+    afficherListe("");
+
+    if (groupeMarqueurs.getLayers().length > 0) {
+        carte.fitBounds(groupeMarqueurs.getBounds(), {
+            padding: [35, 35],
+            maxZoom: 16
+        });
+    }
+
+    setTimeout(function () {
+        carte.invalidateSize();
+    }, 200);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block titre %}Comptes et rôles — GIC Anosizato Ouest{% endblock %}
+
+{% block contenu %}
+<div class="page-head">
+    <div>
+        <p class="eyebrow">Administration de la plateforme</p>
+        <h1>Comptes et rôles</h1>
+        <p>Créez les comptes, attribuez les rôles et gérez les utilisateurs de la commune.</p>
+    </div>
+    <div class="actions">
+        <a class="btn secondary" href="{% url 'comptes:parametres' %}">Paramètres</a>
+        <a class="btn secondary" href="{% url 'accueil:dashboard' %}">Tableau de bord</a>
+    </div>
+</div>
+
+<div class="grid-two">
+    <div class="card">
+        <h2>Créer un compte</h2>
+        <p class="help">
+            Le mot de passe doit respecter les règles de sécurité de la plateforme.
+            Un chef doit être affecté à un fokontany ; les autres rôles interviennent
+            sur l'ensemble de la commune.
+        </p>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="role">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="nouveau-username">Nom d'utilisateur *</label>
+                    <input id="nouveau-username" type="text" name="username" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="nouveau-nom">Nom complet</label>
+                    <input id="nouveau-nom" type="text" name="nom_complet" autocomplete="name">
+                </div>
+                <div class="form-group">
+                    <label for="nouveau-password">Mot de passe provisoire *</label>
+                    <input id="nouveau-password" type="password" name="password" minlength="12" required autocomplete="new-password">
+                    <small>12 caractères minimum, pas uniquement des chiffres.</small>
+                </div>
+                <div class="form-group">
+                    <label for="nouveau-role">Rôle *</label>
+                    <select id="nouveau-role" name="role" required>
+                        {% for valeur, libelle in roles %}
+                        <option value="{{ valeur }}">{{ libelle }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="nouveau-fokontany">Fokontany (chef uniquement)</label>
+                    <select id="nouveau-fokontany" name="fokontany">
+                        <option value="">-- Aucun --</option>
+                        {% for fokontany in fokontanys %}
+                        <option value="{{ fokontany.pk }}">{{ fokontany.nom }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="actions">
+                <button class="btn" type="submit">Créer le compte</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>Responsabilités des acteurs</h2>
+        <ul class="auth-points">
+            <li><strong>Administrateur</strong> : comptes, rôles et paramètres de la plateforme.</li>
+            <li><strong>Maire</strong> : consultation et supervision des informations communales.</li>
+            <li><strong>Chef Fokontany</strong> : informations relatives à son fokontany.</li>
+            <li><strong>Trésorier</strong> : opérations de trésorerie (adidy, fonds).</li>
+            <li><strong>Secrétaire</strong> : informations et opérations administratives.</li>
+        </ul>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Comptes enregistrés</h2>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Utilisateur</th>
+                    <th>Nom complet</th>
+                    <th>Rôle actuel</th>
+                    <th>Fokontany</th>
+                    <th>Modifier le rôle</th>
+                    <th>Supprimer</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for profil in profils %}
+                <tr>
+                    <td>{{ profil.utilisateur.username }}</td>
+                    <td>{{ profil.utilisateur.get_full_name|default:"—" }}</td>
+                    <td><span class="badge badge-info">{{ profil.get_role_display }}</span></td>
+                    <td>{{ profil.fokontany.nom|default:"—" }}</td>
+                    <td>
+                        <form method="post" class="form-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="modifier_role">
+                            <input type="hidden" name="profil_id" value="{{ profil.pk }}">
+                            <select name="role" required>
+                                {% for valeur, libelle in roles %}
+                                <option value="{{ valeur }}" {% if profil.role == valeur %}selected{% endif %}>{{ libelle }}</option>
+                                {% endfor %}
+                            </select>
+                            <select name="fokontany">
+                                <option value="">-- Aucun --</option>
+                                {% for fokontany in fokontanys %}
+                                <option value="{{ fokontany.pk }}" {% if profil.fokontany_id == fokontany.pk %}selected{% endif %}>{{ fokontany.nom }}</option>
+                                {% endfor %}
+                            </select>
+                            <button class="btn small" type="submit">Modifier</button>
+                        </form>
+                    </td>
+                    <td>
+                        <form method="post" onsubmit="return confirm('Supprimer ce compte ?');">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="supprimer">
+                            <input type="hidden" name="profil_id" value="{{ profil.pk }}">
+                            <button class="btn small danger" type="submit">Supprimer</button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="empty">Aucun compte enregistré.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

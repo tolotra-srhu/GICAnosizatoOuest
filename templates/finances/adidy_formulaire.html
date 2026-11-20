@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block titre %}{{ titre }} — GIC Anosizato Ouest{% endblock %}
+
+{% block contenu %}
+<div class="page-head">
+    <div>
+        <p class="eyebrow">Devoir mensuel · Carnet de fokontany</p>
+        <h1>{{ titre }}</h1>
+        <p>Le paiement est automatiquement inscrit dans le suivi du fokontany.</p>
+    </div>
+    <div class="actions">
+        <a class="btn secondary" href="{% url 'finances:adidy_liste' %}">Liste des paiements</a>
+    </div>
+</div>
+
+<div class="card">
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-grid">
+            {% include "includes/formulaire.html" %}
+        </div>
+        <div class="actions">
+            <button class="btn" type="submit">Enregistrer le paiement</button>
+            <a class="btn secondary" href="{% url 'finances:adidy_liste' %}">Annuler</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

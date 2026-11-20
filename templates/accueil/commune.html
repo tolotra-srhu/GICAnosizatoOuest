@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block titre %}La Commune d'Anosizato Ouest — District Antananarivo Atsimondrano{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+{% endblock %}
+
+{% block contenu %}
+<section class="page-hero">
+    <div>
+        <p class="eyebrow">Commune Rurale</p>
+        <h1>Anosizato Ouest</h1>
+        <p class="page-hero-sub">District Antananarivo Atsimondrano · Région Analamanga</p>
+        <p>
+            Située à l'ouest de la capitale, la Commune d'Anosizato Ouest est
+            composée de <strong>{{ total_fokontany }} fokontany</strong>. Elle
+            coordonne le recensement, l'état civil, les demandes d'amélioration
+            et les activités communautaires de son territoire.
+        </p>
+        <div class="actions">
+            <a class="btn" href="{% url 'login' %}">Accéder à la plateforme</a>
+            <a class="btn ghost" href="#fokontany-commune">Explorer les fokontany</a>
+        </div>
+    </div>
+    <img src="{% static 'img/logo.png' %}" alt="Logo de la commune" class="page-hero-logo">
+</section>
+
+<section class="card map-commune-card">
+    <div class="card-head">
+        <div>
+            <h2>Emplacement de la commune</h2>
+            <p>Localisation des fokontany sur la carte interactive.</p>
+        </div>
+        <span class="badge badge-info">7 fokontany</span>
+    </div>
+    <div id="commune-map" class="commune-map"></div>
+</section>
+
+<section class="card">
+    <div class="card-head">
+        <div>
+            <h2>Population de référence {{ annee_population }}</h2>
+            <p>Répartition par fokontany — donnée de référence distincte des citoyens recensés sur la plateforme.</p>
+        </div>
+        <span class="badge badge-info">{{ totaux_population.total }} habitants</span>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr><th>Fokontany</th><th>Hommes</th><th>Femmes</th><th>Total</th></tr>
+            </thead>
+            <tbody>
+                {% for f in fokontanys %}
+                <tr>
+                    <td><strong>{{ f.nom }}</strong></td>
+                    <td>{{ f.population_hommes|default:0 }}</td>
+                    <td>{{ f.population_femmes|default:0 }}</td>
+                    <td><strong>{{ f.population_hommes|add:f.population_femmes }}</strong></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="empty">Aucun fokontany enregistré.</td></tr>
+                {% endfor %}
+                <tr>
+                    <td><strong>Total commune</strong></td>
+                    <td><strong>{{ totaux_population.hommes }}</strong></td>
+                    <td><strong>{{ totaux_population.femmes }}</strong></td>
+                    <td><strong>{{ totaux_population.total }}</strong></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="section" id="fokontany-commune">
+    <div class="section-head">
+        <h2>Les fokontany et leurs spécificités</h2>
+        <p>Chaque fokontany dispose de son espace de gestion dédié.</p>
+    </div>
+
+    <div class="commune-grid">
+        {% for f in fokontanys %}
+        <article class="commune-card">
+            <div class="commune-card-head">
+                <div>
+                    <span class="fokontany-code">{{ f.code }}</span>
+                    <h3>{{ f.nom }}</h3>
+                </div>
+                {% if f.responsable %}
+                <span class="badge badge-info">{{ f.responsable }}</span>
+                {% endif %}
+            </div>
+
+            <p>{{ f.specificites|default:"Spécificités à renseigner par l'administration communale." }}</p>
+
+            <dl class="mini-details">
+                <div><dt>Adresse</dt><dd>{{ f.adresse|default:"Non renseignée" }}</dd></div>
+                <div><dt>Téléphone</dt><dd>{{ f.telephone|default:"Non renseigné" }}</dd></div>
+                <div><dt>Population H / F ({{ annee_population }})</dt><dd>{{ f.population_hommes|default:0 }} / {{ f.population_femmes|default:0 }}</dd></div>
+                <div><dt>Habitants (référence)</dt><dd>{{ f.population_hommes|add:f.population_femmes }}</dd></div>
+                <div><dt>Citoyens recensés</dt><dd>{{ f.nb_citoyens }}</dd></div>
+                <div><dt>Naissances enregistrées</dt><dd>{{ f.nb_naissances }}</dd></div>
+                <div><dt>Demandes</dt><dd>{{ f.nb_demandes }}</dd></div>
+            </dl>
+
+            {% if user.is_authenticated %}
+            <a class="btn small" href="{% url 'fokontany:detail' f.pk %}">Ouvrir la fiche</a>
+            {% endif %}
+        </article>
+        {% empty %}
+        <p class="empty">Aucun fokontany enregistré.</p>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="cta-band">
+    <div>
+        <h2>Une question sur la commune ?</h2>
+        <p>Connectez-vous pour accéder aux services et aux responsables.</p>
+    </div>
+    <a class="btn light" href="{% url 'login' %}">Se connecter</a>
+</section>
+
+{{ carte_fokontany|json_script:"carte-commune-data" }}
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function () {
+    const fokontany = JSON.parse(document.getElementById('carte-commune-data').textContent);
+    const anneePopulation = {{ annee_population }};
+    const el = document.getElementById('commune-map');
+    if (!el || !window.L) return;
+
+    const carte = L.map('commune-map').setView([-18.941, 47.495], 13);
+    L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+    {
+        maxZoom: 19,
+        attribution: 'Tiles &copy; Esri'
+    }
+).addTo(carte);
+
+    const groupe = L.featureGroup().addTo(carte);
+    fokontany.forEach(function (f) {
+        const lat = Number(f.latitude);
+        const lng = Number(f.longitude);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+        const marqueur = L.marker([lat, lng]).addTo(groupe);
+        const specificites = f.specificites || f.adresse || 'Spécificités à renseigner.';
+        const habitants = Number(f.population_hommes || 0) + Number(f.population_femmes || 0);
+        marqueur.bindPopup(
+            '<strong>' + f.nom + '</strong><br><small>' + f.code + '</small><br>' +
+            '<p style="margin:6px 0 0;font-size:12px;">' + specificites + '</p>' +
+            '<p style="margin:6px 0 0;font-size:12px;">Population ' + anneePopulation + ' : ' +
+            habitants + ' habitants (' + Number(f.population_hommes || 0) + ' H / ' +
+            Number(f.population_femmes || 0) + ' F)</p>'
+        );
+        marqueur.bindTooltip(f.nom, { permanent: true, direction: 'right', offset: [8, 0] });
+    });
+
+    if (groupe.getLayers().length > 0) {
+        carte.fitBounds(groupe.getBounds(), { padding: [30, 30], maxZoom: 15 });
+    }
+    setTimeout(function () { carte.invalidateSize(); }, 250);
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,132 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block titre %}GIC Anosizato Ouest{% endblock %}</title>
+    <link rel="icon" type="image/png" href="{% static 'img/logo.png' %}">
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+    {% block styles %}{% endblock %}
+</head>
+<body>
+<header class="topbar">
+    <a class="brand" href="{% url 'accueil:accueil' %}">
+        <img src="{% static 'img/logo.png' %}" alt="Logo Commune Anosizato Ouest" class="brand-logo">
+        <span class="brand-text">
+            <strong>Anosizato Ouest</strong>
+            <small>Plateforme de Gestion Intégrée Communale</small>
+        </span>
+    </a>
+
+    <nav class="nav" aria-label="Navigation principale">
+        <a href="{% url 'accueil:accueil' %}"
+           class="{% if request.resolver_match.view_name == 'accueil:accueil' %}active{% endif %}">
+            Accueil
+        </a>
+        <a href="{% url 'accueil:commune' %}"
+           class="{% if request.resolver_match.view_name == 'accueil:commune' %}active{% endif %}">
+            La commune
+        </a>
+        {% if user.is_authenticated %}
+        <a href="{% url 'accueil:dashboard' %}"
+           class="{% if request.resolver_match.view_name == 'accueil:dashboard' %}active{% endif %}">
+            Tableau de bord
+        </a>
+        <a href="{% url 'demandes:liste' %}"
+           class="{% if request.resolver_match.app_name == 'demandes' %}active{% endif %}">
+            Demandes
+        </a>
+        <a href="{% url 'citoyens:liste' %}"
+           class="{% if request.resolver_match.app_name == 'citoyens' %}active{% endif %}">
+            Recensement
+        </a>
+        <a href="{% url 'etat_civil:liste' %}"
+           class="{% if request.resolver_match.app_name == 'etat_civil' %}active{% endif %}">
+            État civil
+        </a>
+        <a href="{% url 'finances:adidy_liste' %}"
+           class="{% if request.resolver_match.app_name == 'finances' %}active{% endif %}">
+            Adidy
+        </a>
+        <a href="{% url 'personnel:liste' %}"
+           class="{% if request.resolver_match.app_name == 'personnel' %}active{% endif %}">
+            Personnel
+        </a>
+        <a href="{% url 'fokontany:liste' %}"
+           class="{% if request.resolver_match.app_name == 'fokontany' %}active{% endif %}">
+            {% if acces_global %}Fokontany{% else %}Mon fokontany{% endif %}
+        </a>
+        {% if est_maire or est_tresorier %}
+        <a href="{% url 'finances:fonds_liste' %}"
+           class="{% if request.resolver_match.view_name == 'finances:fonds_liste' %}active{% endif %}">
+            Caisse
+        </a>
+        {% endif %}
+        {% if est_administrateur %}
+        <a href="{% url 'comptes:gestion_chefs' %}">Comptes et rôles</a>
+        <a href="{% url 'fokontany:population' %}">Population</a>
+        <a href="{% url 'comptes:parametres' %}">Paramètres</a>
+        <a href="/admin/">Admin</a>
+        {% endif %}
+        {% endif %}
+    </nav>
+
+    {% if user.is_authenticated %}
+    <div class="userbox">
+        <span class="role">
+            {{ role_libelle }}{% if fokontany_connecte %} · {{ fokontany_connecte.nom }}{% endif %}
+        </span>
+        <span class="username">{{ user.username }}</span>
+        <form method="post" action="{% url 'logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="link-btn">Déconnexion</button>
+        </form>
+    </div>
+    {% else %}
+    <div class="auth-nav">
+        <a class="btn ghost" href="{% url 'login' %}">Se connecter</a>
+    </div>
+    {% endif %}
+</header>
+
+<main class="container">
+    {% if messages %}
+    <ul class="messages">
+        {% for message in messages %}
+        <li class="message {{ message.tags }}">{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% block contenu %}{% endblock %}
+</main>
+
+<footer class="app-footer">
+    <div class="footer-inner">
+        <div class="footer-brand">
+            <img src="{% static 'img/logo.png' %}" alt="" class="footer-logo">
+            <div>
+                <strong>Commune d'Anosizato Ouest</strong>
+                <p>Plateforme de Gestion Intégrée Communale</p>
+            </div>
+        </div>
+        <div class="footer-links">
+            <a href="{% url 'accueil:accueil' %}">Accueil</a>
+            {% if user.is_authenticated %}
+            <a href="{% url 'accueil:dashboard' %}">Tableau de bord</a>
+            <a href="{% url 'demandes:liste' %}">Demandes</a>
+            {% else %}
+            <a href="{% url 'login' %}">Connexion</a>
+            {% endif %}
+        </div>
+        <div class="footer-note">
+            <strong>Antananarivo · Madagascar</strong>
+            <p>&copy; 2026 — Tous droits réservés.</p>
+        </div>
+    </div>
+</footer>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

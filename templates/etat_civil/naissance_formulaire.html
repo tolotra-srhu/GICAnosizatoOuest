@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block titre %}{{ titre }} — GIC Anosizato Ouest{% endblock %}
+
+{% block contenu %}
+<div class="page-head">
+    <div>
+        <p class="eyebrow">État civil · Registre des naissances</p>
+        <h1>{{ titre }}</h1>
+        <p>Enregistrement automatisé des données du nouveau-né.</p>
+    </div>
+    <div class="actions">
+        <a class="btn secondary" href="{% url 'etat_civil:naissances_liste' %}">Registre des naissances</a>
+    </div>
+</div>
+
+<div class="card">
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-grid">
+            {% include "includes/formulaire.html" %}
+        </div>
+        <div class="actions">
+            <button class="btn" type="submit">Enregistrer l'acte</button>
+            <a class="btn secondary" href="{% url 'etat_civil:naissances_liste' %}">Annuler</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

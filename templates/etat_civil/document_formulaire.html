@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block titre %}{{ titre }} — GIC Anosizato Ouest{% endblock %}
+
+{% block contenu %}
+<div class="page-head">
+    <div>
+        <p class="eyebrow">État civil · Documents administratifs</p>
+        <h1>{{ titre }}</h1>
+        <p>
+            Renseignez l'identité complète du bénéficiaire, ses parents et
+            l'utilisation du document.
+        </p>
+    </div>
+    <div class="actions">
+        <a class="btn secondary" href="{% url 'etat_civil:documents_liste' %}">Documents délivrés</a>
+        <a class="btn secondary" href="{% url 'etat_civil:certificat_residence' %}">Certificat de résidence</a>
+    </div>
+</div>
+
+<div class="card">
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-grid">
+            {% include "includes/formulaire.html" %}
+        </div>
+        <div class="actions">
+            <button class="btn" type="submit">Enregistrer le document</button>
+            <a class="btn secondary" href="{% url 'etat_civil:documents_liste' %}">Annuler</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block titre %}Bienvenue — Plateforme de Gestion Intégrée Communale d'Anosizato Ouest{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+{% endblock %}
+
+{% block contenu %}
+<section class="hero hero-home">
+    <div class="hero-glow"></div>
+    <div class="hero-grid">
+        <div class="hero-copy">
+            <img src="{% static 'img/logo.png' %}" alt="Armoiries de la Commune d'Anosizato Ouest" class="hero-logo">
+            <p class="hero-kicker">District Antananarivo Atsimondrano</p>
+
+            <div class="hero-slider" id="hero-slider">
+                <div class="hero-slide active">
+                    <h1>
+                        Bienvenue,<br>
+                        <span>Plateforme de Gestion Intégrée Communale</span><br>
+                        Anosizato Ouest
+                    </h1>
+                    <p class="hero-text">
+                        recensement, état civil, demandes d'amélioration, adidy et
+                        actualités des 7 fokontany réunis dans un espace numérique
+                        unique, moderne et sécurisé.
+                    </p>
+                </div>
+                <div class="hero-slide">
+                    <h1>
+                        Une commune<br>
+                        <span>connectée et transparente</span>
+                    </h1>
+                    <p class="hero-text">
+                        Suivez en temps réel les naissances, mariages, décès,
+                        recensements et les demandes d'amélioration de chaque
+                        fokontany.
+                    </p>
+                </div>
+                <div class="hero-slide">
+                    <h1>
+                        Des services<br>
+                        <span>de proximité pour tous</span>
+                    </h1>
+                    <p class="hero-text">
+                        Certificat de résidence, acte de naissance, bulletin et
+                        paiement adidy : des démarches simplifiées pour les citoyens.
+                    </p>
+                </div>
+            </div>
+
+            <div class="hero-dots" id="hero-dots">
+                <button type="button" class="active" aria-label="Diapositive 1"></button>
+                <button type="button" aria-label="Diapositive 2"></button>
+                <button type="button" aria-label="Diapositive 3"></button>
+            </div>
+
+            <div class="hero-actions">
+                {% if user.is_authenticated %}
+                <a class="btn" href="{% url 'accueil:dashboard' %}">Accéder à mon tableau de bord</a>
+                {% else %}
+                <a class="btn" href="{% url 'login' %}">Se connecter</a>
+                {% endif %}
+                <a class="btn ghost" href="{% url 'accueil:commune' %}">Découvrir la commune</a>
+            </div>
+
+            <div class="hero-stats">
+                <div><strong>{{ total_fokontany }}</strong><span>Fokontany</span></div>
+                <div><strong>{{ totaux_population.total }}</strong><span>Habitants ({{ annee_population }})</span></div>
+                <div><strong>{{ total_citoyens }}</strong><span>Citoyens recensés</span></div>
+                <div><strong>{{ total_actes }}</strong><span>Actes enregistrés</span></div>
+                <div><strong>{{ total_demandes }}</strong><span>Demandes suivies</span></div>
+            </div>
+        </div>
+
+        <div class="hero-map-card">
+            <div class="hero-map-head">
+                <div>
+                    <strong>Localisation de la commune</strong>
+                    <span>Anosizato Ouest · 7 fokontany</span>
+                </div>
+                <span class="live-dot">En direct</span>
+            </div>
+            <div id="home-map" class="hero-map" aria-label="Carte des fokontany"></div>
+            <a class="hero-map-link" href="{% url 'accueil:commune' %}">
+                Informations de la commune et des 7 fokontany &rarr;
+            </a>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="section-head">
+        <h2>Une commune connectée, des services simplifiés</h2>
+        <p>Chaque acteur dispose d'un espace adapté à ses responsabilités.</p>
+    </div>
+    <div class="feature-grid">
+        <article class="feature-card">
+            <div class="feature-icon">🏛️</div>
+            <h3>Admin &amp; Adjoints</h3>
+            <p>Vue globale des activités, graphiques mensuels, validation des demandes, caisse de l'association et publication des actualités.</p>
+        </article>
+        <article class="feature-card">
+            <div class="feature-icon">🏘️</div>
+            <h3>Chef Fokontany</h3>
+            <p>Recensement, certificat de résidence, actes, adidy et demandes d'amélioration transmises directement à l'administration.</p>
+        </article>
+        <article class="feature-card">
+            <div class="feature-icon">📄</div>
+            <h3>Documents officiels</h3>
+            <p>Génération automatique de PDF avec logo communal, cachet et QR code de vérification pour chaque demande traitée.</p>
+        </article>
+        <article class="feature-card">
+            <div class="feature-icon">📊</div>
+            <h3>Suivi en temps réel</h3>
+            <p>Naissances, mariages, décès, recensements, CIN et bulletins de naissance consultables instantanément.</p>
+        </article>
+    </div>
+</section>
+
+<section class="section" id="fokontany">
+    <div class="section-head">
+        <h2>Les 7 fokontany de la commune</h2>
+        <p>Emplacement, responsables et spécificités de chaque fokontany.</p>
+    </div>
+    <div class="fokontany-grid">
+        {% for f in fokontanys %}
+        <article class="fokontany-card">
+            <span class="fokontany-code">{{ f.code }}</span>
+            <h3>{{ f.nom }}</h3>
+            <p>{{ f.specificites|default:f.adresse|default:"Spécificités à renseigner."|truncatewords:16 }}</p>
+            <small>{{ f.nb_citoyens }} citoyen{{ f.nb_citoyens|pluralize }} recensé{{ f.nb_citoyens|pluralize }} · {{ f.nb_demandes }} demande{{ f.nb_demandes|pluralize }}</small>
+            <small>{{ f.population_hommes|add:f.population_femmes }} habitants · {{ f.population_hommes|default:0 }} H / {{ f.population_femmes|default:0 }} F ({{ annee_population }})</small>
+        </article>
+        {% empty %}
+        <p class="empty">Aucun fokontany enregistré pour le moment.</p>
+        {% endfor %}
+    </div>
+    <div class="section-actions">
+        <a class="btn secondary" href="{% url 'accueil:commune' %}">Voir toutes les informations de la commune</a>
+    </div>
+</section>
+
+{% if actualites %}
+<section class="section">
+    <div class="section-head">
+        <h2>Actualités de la commune</h2>
+        <p>Réunions, fêtes et informations publiées par l'administration communale, visibles par tous les chefs fokontany.</p>
+    </div>
+    <div class="news-grid">
+        {% for actualite in actualites %}
+        <article class="news-card">
+            {% if actualite.image %}
+            <img src="{{ actualite.image.url }}" alt="{{ actualite.titre }}">
+            {% else %}
+            <div class="news-placeholder">{{ actualite.get_categorie_display }}</div>
+            {% endif %}
+            <div class="news-body">
+                <span class="badge badge-info">{{ actualite.get_categorie_display }}</span>
+                <h3>{{ actualite.titre }}</h3>
+                <p>{{ actualite.contenu|truncatewords:28 }}</p>
+                <small>{{ actualite.date_publication|date:"d/m/Y" }}</small>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<section class="cta-band">
+    <div>
+        <h2>Vous êtes chef de fokontany ?</h2>
+        <p>Connectez-vous avec vos identifiants et sélectionnez votre rôle.</p>
+    </div>
+    <a class="btn light" href="{% url 'login' %}">Espace authentification</a>
+</section>
+
+{{ carte_fokontany|json_script:"carte-accueil-data" }}
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function () {
+    const slides = document.querySelectorAll('#hero-slider .hero-slide');
+    const dots = document.querySelectorAll('#hero-dots button');
+    let index = 0;
+
+    function afficherSlide(nouvelIndex) {
+        index = (nouvelIndex + slides.length) % slides.length;
+        slides.forEach(function (slide, i) {
+            slide.classList.toggle('active', i === index);
+        });
+        dots.forEach(function (dot, i) {
+            dot.classList.toggle('active', i === index);
+        });
+    }
+
+    dots.forEach(function (dot, i) {
+        dot.addEventListener('click', function () {
+            afficherSlide(i);
+            demarrer();
+        });
+    });
+
+    let minuteur = null;
+    function demarrer() {
+        if (minuteur) clearInterval(minuteur);
+        minuteur = setInterval(function () {
+            afficherSlide(index + 1);
+        }, 6000);
+    }
+    demarrer();
+
+    const fokontany = JSON.parse(document.getElementById('carte-accueil-data').textContent);
+    const anneePopulation = {{ annee_population }};
+    const carteEl = document.getElementById('home-map');
+    if (!carteEl || !window.L) return;
+
+    const carte = L.map('home-map', { scrollWheelZoom: false }).setView([-18.941, 47.495], 13);
+    L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+    {
+        maxZoom: 19,
+        attribution: 'Tiles &copy; Esri'
+    }
+).addTo(carte);
+
+    const groupe = L.featureGroup().addTo(carte);
+
+    fokontany.forEach(function (f) {
+        const lat = Number(f.latitude);
+        const lng = Number(f.longitude);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+        const marqueur = L.marker([lat, lng]).addTo(groupe);
+        const specificites = f.specificites || f.adresse || 'Spécificités à renseigner.';
+        const habitants = Number(f.population_hommes || 0) + Number(f.population_femmes || 0);
+        marqueur.bindPopup(
+            '<strong>' + f.nom + '</strong><br>' +
+            '<small>' + f.code + '</small><br>' +
+            '<p style="margin:6px 0 0;font-size:12px;">' + specificites + '</p>' +
+            '<p style="margin:6px 0 0;font-size:12px;">Population ' + anneePopulation + ' : ' +
+            habitants + ' habitants (' + Number(f.population_hommes || 0) + ' H / ' +
+            Number(f.population_femmes || 0) + ' F)</p>' +
+            '<a href="/commune/" style="font-size:12px;">Voir la commune</a>'
+        );
+        marqueur.bindTooltip(f.nom, { permanent: false, direction: 'top' });
+    });
+
+    if (groupe.getLayers().length > 0) {
+        carte.fitBounds(groupe.getBounds(), { padding: [28, 28], maxZoom: 15 });
+    }
+
+    setTimeout(function () { carte.invalidateSize(); }, 250);
+})();
+</script>
+{% endblock %}

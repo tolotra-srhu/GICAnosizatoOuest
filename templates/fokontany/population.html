@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block titre %}Population des fokontany — GIC Anosizato Ouest{% endblock %}
+
+{% block contenu %}
+<div class="page-head">
+    <div>
+        <p class="eyebrow">Administration de la plateforme</p>
+        <h1>Population de référence {{ annee }}</h1>
+        <p>Répartition par fokontany : hommes, femmes et total calculé automatiquement.</p>
+    </div>
+    <div class="actions">
+        <a class="btn secondary" href="{% url 'fokontany:liste' %}">Fokontany</a>
+        <a class="btn secondary" href="{% url 'comptes:parametres' %}">Paramètres</a>
+    </div>
+</div>
+
+<div class="card">
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="source">Source des données</label>
+            <input id="source" name="source" type="text" value="{{ source }}"
+                   placeholder="Recensement administratif {{ annee }}">
+        </div>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fokontany</th>
+                        <th>Hommes</th>
+                        <th>Femmes</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ligne in lignes %}
+                    <tr>
+                        <td><strong>{{ ligne.fokontany.nom }}</strong><br><small>{{ ligne.fokontany.code }}</small></td>
+                        <td>
+                            <input type="number" min="0" step="1" required
+                                   name="hommes_{{ ligne.fokontany.pk }}"
+                                   value="{{ ligne.hommes }}"
+                                   aria-label="Hommes à {{ ligne.fokontany.nom }}">
+                        </td>
+                        <td>
+                            <input type="number" min="0" step="1" required
+                                   name="femmes_{{ ligne.fokontany.pk }}"
+                                   value="{{ ligne.femmes }}"
+                                   aria-label="Femmes à {{ ligne.fokontany.nom }}">
+                        </td>
+                        <td><strong>{{ ligne.total|default:"—" }}</strong></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="empty">Aucun fokontany actif.</td></tr>
+                    {% endfor %}
+                    <tr>
+                        <td><strong>Total commune</strong></td>
+                        <td><strong>{{ totaux.hommes }}</strong></td>
+                        <td><strong>{{ totaux.femmes }}</strong></td>
+                        <td><strong>{{ totaux.total }}</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="actions">
+            <button class="btn" type="submit">Enregistrer la population</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
